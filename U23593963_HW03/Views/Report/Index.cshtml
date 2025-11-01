@@ -41,6 +41,7 @@
         <div class="card mb-4">
             <div class="card-header bg-info text-white">
                 <h4><i class="fas fa-file-alt"></i> @Model.ReportTitle</h4>
+                <small class="text-light">Chart Type: <strong>@GetChartTypeName(Model.ChartType)</strong></small>
             </div>
             <div class="card-body">
                 <!-- Chart Display -->
@@ -86,10 +87,7 @@
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label for="fileType" class="form-label fw-bold">File Type:</label>
-                                    <select id="fileType" name="fileType" class="form-control">
-                                        <option value="pdf">PDF Document</option>
-                                        <option value="html">HTML Report</option>
-                                    </select>
+                                    @Html.DropDownList("fileType", Model.FileTypes, new { @class = "form-control" })
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label class="form-label fw-bold">Actions:</label>
@@ -149,6 +147,7 @@
                                 <th>Filename</th>
                                 <th>File Type</th>
                                 <th>Date Saved</th>
+                                <th>File Size</th>
                                 <th>Description</th>
                                 <th>Actions</th>
                             </tr>
@@ -162,6 +161,7 @@
                                         <span class="badge bg-info">@report.FileType.ToUpper()</span>
                                     </td>
                                     <td>@report.CreatedDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>@report.FileSize</td>
                                     <td>
                                         @if (!string.IsNullOrEmpty(report.Description))
                                         {
@@ -254,6 +254,20 @@
     </div>
 </div>
 
+@functions {
+    public string GetChartTypeName(string chartType)
+    {
+        switch (chartType?.ToLower())
+        {
+            case "line": return "Line Chart (Trend Analysis)";
+            case "bar": return "Bar Chart (Comparison)";
+            case "horizontalbar": return "Horizontal Bar Chart (Quantity Comparison)";
+            case "pie": return "Pie Chart (Distribution)";
+            default: return "Bar Chart";
+        }
+    }
+}
+
 @section Scripts {
     <!-- Chart.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
@@ -277,6 +291,7 @@
 
             ctx = ctx.getContext('2d');
             var data = getChartData();
+            var chartType = chartData.ChartType || 'bar';
 
             if (!data) {
                 $('#reportChart').closest('.chart-container').html(
@@ -286,42 +301,76 @@
             }
 
             myChart = new Chart(ctx, {
-                type: 'bar',
+                type: chartType,
                 data: {
                     labels: data.labels,
                     datasets: [{
                         label: chartData.ReportTitle,
                         data: data.values,
-                        backgroundColor: generateColors(data.values.length),
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
+                        backgroundColor: generateColors(data.values.length, chartType),
+                        borderColor: chartType === 'line' ? 'rgba(54, 162, 235, 1)' : 'rgba(54, 162, 235, 0.2)',
+                        borderWidth: chartType === 'line' ? 2 : 1,
+                        fill: chartType === 'line'
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        yAxes: [{
-                            ticks: {
-                                beginAtZero: true,
-                                callback: function(value) {
-                                    return formatNumber(value);
-                                }
-                            }
-                        }]
-                    },
-                    tooltips: {
-                        callbacks: {
-                            label: function(tooltipItem, data) {
-                                return data.datasets[tooltipItem.datasetIndex].label + ': ' +
-                                       formatNumber(tooltipItem.yLabel);
-                            }
-                        }
-                    }
-                }
+                options: getChartOptions(chartType)
             });
 
             updateReportSummary(data);
+        }
+
+        function getChartOptions(chartType) {
+            var baseOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, data) {
+                            return data.datasets[tooltipItem.datasetIndex].label + ': ' + formatNumber(tooltipItem.yLabel);
+                        }
+                    }
+                }
+            };
+
+            // Custom options for different chart types
+            switch(chartType) {
+                case 'line':
+                    baseOptions.scales = {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                                callback: function(value) { return formatNumber(value); }
+                            }
+                        }]
+                    };
+                    break;
+                case 'bar':
+                case 'horizontalBar':
+                    baseOptions.scales = {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true,
+                                callback: function(value) { return formatNumber(value); }
+                            }
+                        }]
+                    };
+                    break;
+                case 'pie':
+                    baseOptions.tooltips = {
+                        callbacks: {
+                            label: function(tooltipItem, data) {
+                                var label = data.labels[tooltipItem.index] || '';
+                                var value = data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                                var total = data.datasets[tooltipItem.datasetIndex].data.reduce((a, b) => a + b, 0);
+                                var percentage = Math.round((value / total) * 100);
+                                return label + ': ' + formatNumber(value) + ' (' + percentage + '%)';
+                            }
+                        }
+                    };
+                    break;
+            }
+
+            return baseOptions;
         }
 
         function getChartData() {
@@ -342,23 +391,48 @@
             };
         }
 
-        function generateColors(count) {
+        function generateColors(count, chartType) {
             var colors = [];
-            var baseColors = [
-                'rgba(54, 162, 235, 0.7)',
-                'rgba(255, 99, 132, 0.7)',
-                'rgba(75, 192, 192, 0.7)',
-                'rgba(255, 159, 64, 0.7)',
-                'rgba(153, 102, 255, 0.7)',
-                'rgba(255, 205, 86, 0.7)',
-                'rgba(201, 203, 207, 0.7)',
-                'rgba(0, 128, 0, 0.7)',
-                'rgba(128, 0, 128, 0.7)',
-                'rgba(128, 128, 0, 0.7)'
-            ];
 
-            for (var i = 0; i < count; i++) {
-                colors.push(baseColors[i % baseColors.length]);
+            if (chartType === 'pie') {
+                // Distinct colors for pie chart
+                var pieColors = [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 205, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(199, 199, 199, 0.7)',
+                    'rgba(83, 102, 255, 0.7)',
+                    'rgba(40, 159, 64, 0.7)',
+                    'rgba(210, 99, 132, 0.7)'
+                ];
+                for (var i = 0; i < count; i++) {
+                    colors.push(pieColors[i % pieColors.length]);
+                }
+            } else if (chartType === 'line') {
+                // Single color for line chart
+                for (var i = 0; i < count; i++) {
+                    colors.push('rgba(54, 162, 235, 0.2)');
+                }
+            } else {
+                // Gradient colors for bar charts
+                var baseColors = [
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 205, 86, 0.7)',
+                    'rgba(201, 203, 207, 0.7)',
+                    'rgba(0, 128, 0, 0.7)',
+                    'rgba(128, 0, 128, 0.7)',
+                    'rgba(128, 128, 0, 0.7)'
+                ];
+                for (var i = 0; i < count; i++) {
+                    colors.push(baseColors[i % baseColors.length]);
+                }
             }
             return colors;
         }
@@ -506,6 +580,7 @@
                 content: [
                     { text: chartData.ReportTitle, style: 'header' },
                     { text: 'Generated on: ' + new Date().toLocaleString(), style: 'subheader' },
+                    { text: 'Chart Type: ' + (chartData.ChartType || 'bar').toUpperCase(), style: 'subheader' },
                     { text: '\n' },
                     {
                         text: 'Description:',

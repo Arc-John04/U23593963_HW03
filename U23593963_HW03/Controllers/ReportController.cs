@@ -29,6 +29,12 @@ namespace U23593963_HW03.Controllers
                     new SelectListItem { Value = "StaffRanking", Text = "Staff Performance Ranking" },
                     new SelectListItem { Value = "StoreRanking", Text = "Store Performance Ranking" }
                 },
+                FileTypes = new List<SelectListItem>
+                {
+                    new SelectListItem { Value = "pdf", Text = "PDF Document" },
+                    new SelectListItem { Value = "txt", Text = "Text File" },
+                    new SelectListItem { Value = "csv", Text = "CSV File" }
+                },
                 SelectedReportType = reportType,
                 SavedReports = Session["SavedReports"] as List<SavedReport> ?? new List<SavedReport>()
             };
@@ -46,7 +52,6 @@ namespace U23593963_HW03.Controllers
             return View("Index", ((ViewResult)result).Model);
         }
 
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult SaveReport(string fileName, string fileType, string description, string chartData)
@@ -60,14 +65,19 @@ namespace U23593963_HW03.Controllers
                     return RedirectToAction("Index");
                 }
 
+                // Generate file content based on type
+                byte[] fileContent = GenerateFileContent(fileType, chartData, description);
+                string fileExtension = GetFileExtension(fileType);
+                string fullFileName = fileName + fileExtension;
+
                 var savedReport = new SavedReport
                 {
-                    FileName = fileName + "." + (fileType ?? "pdf"),
-                    FileType = fileType ?? "pdf",
+                    FileName = fullFileName,
+                    FileType = fileType,
                     Description = description,
                     CreatedDate = DateTime.Now,
-                    FileSize = "N/A",
-                    FileContent = System.Text.Encoding.UTF8.GetBytes(chartData ?? "")
+                    FileSize = FormatFileSize(fileContent.Length),
+                    FileContent = fileContent
                 };
 
                 var savedReports = Session["SavedReports"] as List<SavedReport> ?? new List<SavedReport>();
@@ -128,8 +138,8 @@ namespace U23593963_HW03.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Return as downloadable file
-            return File(report.FileContent, "application/octet-stream", report.FileName);
+            string contentType = GetContentType(report.FileType);
+            return File(report.FileContent, contentType, report.FileName);
         }
 
         private async Task LoadReportData(ReportViewModel model, string reportType)
@@ -139,34 +149,139 @@ namespace U23593963_HW03.Controllers
                 case "CurrentSales":
                     model.ReportTitle = "Current Sales Report";
                     model.SalesByMonth = await GetCurrentSalesReport();
+                    model.SalesRecords = await GetSalesRecords();
+                    model.ChartType = "line"; // Trend over time
                     break;
                 case "StockItems":
                     model.ReportTitle = "Stock Items Report";
                     model.StockStatus = await GetStockItemsReport();
+                    model.StockRecords = await GetStockRecords();
+                    model.ChartType = "horizontalBar"; // Quantity comparison
                     break;
                 case "PopularProducts":
                     model.ReportTitle = "Popular Products Report";
                     model.TopProducts = await GetPopularProductsReport();
+                    model.ChartType = "bar"; // Ranking comparison
                     break;
                 case "CustomerRanking":
                     model.ReportTitle = "Customer Performance Ranking";
                     model.CustomerPerformance = await GetCustomerRankingReport();
+                    model.CustomerRecords = await GetCustomerRecords();
+                    model.ChartType = "bar"; // Performance ranking
                     break;
                 case "StaffRanking":
                     model.ReportTitle = "Staff Performance Ranking";
                     model.StaffPerformance = await GetStaffRankingReport();
+                    model.ChartType = "bar"; // Performance comparison
                     break;
                 case "StoreRanking":
                     model.ReportTitle = "Store Performance Ranking";
                     model.StorePerformance = await GetStoreRankingReport();
+                    model.ChartType = "pie"; // Market share distribution
                     break;
                 default:
                     model.ReportTitle = "Sales Report";
                     model.SalesByMonth = await GetCurrentSalesReport();
+                    model.SalesRecords = await GetSalesRecords();
+                    model.ChartType = "line";
                     break;
             }
         }
 
+        private byte[] GenerateFileContent(string fileType, string chartDataJson, string description)
+        {
+            var chartData = JsonConvert.DeserializeObject<dynamic>(chartDataJson ?? "{}");
+            string content = "";
+
+            switch (fileType.ToLower())
+            {
+                case "txt":
+                    content = GenerateTextContent(chartData, description);
+                    break;
+                case "csv":
+                    content = GenerateCsvContent(chartData, description);
+                    break;
+                case "pdf":
+                default:
+                    // For PDF, we'll use the existing JavaScript method
+                    content = "PDF content would be generated here";
+                    break;
+            }
+
+            return System.Text.Encoding.UTF8.GetBytes(content);
+        }
+
+        private string GenerateTextContent(dynamic chartData, string description)
+        {
+            string content = $"REPORT: {chartData?.title ?? "Untitled Report"}\n";
+            content += $"Generated: {DateTime.Now:yyyy-MM-dd HH:mm}\n";
+            content += $"Description: {description ?? "No description provided"}\n\n";
+            content += "DATA:\n";
+
+            if (chartData?.labels != null && chartData?.values != null)
+            {
+                for (int i = 0; i < chartData.labels.Count; i++)
+                {
+                    content += $"{chartData.labels[i]}: {chartData.values[i]}\n";
+                }
+            }
+
+            return content;
+        }
+
+        private string GenerateCsvContent(dynamic chartData, string description)
+        {
+            string content = $"Report,{chartData?.title ?? "Untitled Report"}\n";
+            content += $"Generated,{DateTime.Now:yyyy-MM-dd HH:mm}\n";
+            content += $"Description,{description ?? "No description provided"}\n";
+            content += "Label,Value\n";
+
+            if (chartData?.labels != null && chartData?.values != null)
+            {
+                for (int i = 0; i < chartData.labels.Count; i++)
+                {
+                    content += $"{chartData.labels[i]},{chartData.values[i]}\n";
+                }
+            }
+
+            return content;
+        }
+
+        private string GetFileExtension(string fileType)
+        {
+            switch (fileType.ToLower())
+            {
+                case "pdf": return ".pdf";
+                case "txt": return ".txt";
+                case "csv": return ".csv";
+                default: return ".pdf";
+            }
+        }
+
+        private string GetContentType(string fileType)
+        {
+            switch (fileType.ToLower())
+            {
+                case "pdf": return "application/pdf";
+                case "txt": return "text/plain";
+                case "csv": return "text/csv";
+                default: return "application/octet-stream";
+            }
+        }
+
+        private string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "B", "KB", "MB", "GB" };
+            int order = 0;
+            while (bytes >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                bytes = bytes / 1024;
+            }
+            return $"{bytes:0.##} {sizes[order]}";
+        }
+
+        // Data loading methods
         private async Task<List<DataPoint>> GetCurrentSalesReport()
         {
             var salesData = await db.orders
@@ -184,6 +299,28 @@ namespace U23593963_HW03.Controllers
                 (double)s.TotalSales,
                 new DateTime(DateTime.Now.Year, s.Month, 1).ToString("MMM yyyy")
             )).ToList();
+        }
+
+        private async Task<List<SalesRecord>> GetSalesRecords()
+        {
+            var sales = await db.orders
+                .Include(o => o.customers)
+                .Include(o => o.staffs)
+                .Include(o => o.order_items.Select(oi => oi.products))
+                .Where(o => o.order_date.Year == DateTime.Now.Year)
+                .OrderByDescending(o => o.order_date)
+                .Take(20)
+                .Select(o => new SalesRecord
+                {
+                    CustomerName = o.customers.first_name + " " + o.customers.last_name,
+                    ProductName = o.order_items.FirstOrDefault().products.product_name,
+                    StaffName = o.staffs.first_name + " " + o.staffs.last_name,
+                    OrderDate = o.order_date,
+                    Amount = o.order_items.Sum(oi => oi.quantity * oi.list_price * (1 - oi.discount))
+                })
+                .ToListAsync();
+
+            return sales;
         }
 
         private async Task<List<DataPoint>> GetStockItemsReport()
@@ -205,6 +342,27 @@ namespace U23593963_HW03.Controllers
                 (double)(s.TotalStock ?? 0),
                 s.ProductName
             )).ToList();
+        }
+
+        private async Task<List<StockRecord>> GetStockRecords()
+        {
+            var stock = await db.stocks
+                .Include(s => s.products)
+                .Include(s => s.products.brands)
+                .Include(s => s.products.categories)
+                .Where(s => s.quantity > 0)
+                .OrderByDescending(s => s.quantity)
+                .Take(20)
+                .Select(s => new StockRecord
+                {
+                    ProductName = s.products.product_name,
+                    Brand = s.products.brands.brand_name,
+                    Category = s.products.categories.category_name,
+                    Quantity = s.quantity ?? 0
+                })
+                .ToListAsync();
+
+            return stock;
         }
 
         private async Task<List<DataPoint>> GetPopularProductsReport()
@@ -243,6 +401,26 @@ namespace U23593963_HW03.Controllers
                 .ToListAsync();
 
             return customerRanking.Select(c => new DataPoint(c.TotalOrders, c.CustomerName)).ToList();
+        }
+
+        private async Task<List<CustomerRecord>> GetCustomerRecords()
+        {
+            var customers = await db.orders
+                .Include(o => o.customers)
+                .Include(o => o.order_items)
+                .Where(o => o.customers != null)
+                .GroupBy(o => new { o.customers.customer_id, o.customers.first_name, o.customers.last_name })
+                .Select(g => new CustomerRecord
+                {
+                    CustomerName = g.Key.first_name + " " + g.Key.last_name,
+                    TotalOrders = g.Count(),
+                    TotalSpent = g.Sum(o => o.order_items.Sum(oi => oi.quantity * oi.list_price * (1 - oi.discount)))
+                })
+                .OrderByDescending(c => c.TotalSpent)
+                .Take(10)
+                .ToListAsync();
+
+            return customers;
         }
 
         private async Task<List<DataPoint>> GetStaffRankingReport()
