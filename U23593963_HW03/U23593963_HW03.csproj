@@ -133,6 +133,7 @@
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\MaintainController.cs" />
     <Compile Include="Controllers\productsController.cs" />
+    <Compile Include="Controllers\ReportController.cs" />
     <Compile Include="Controllers\staffsController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -171,6 +172,7 @@
     <Compile Include="Models\products.cs">
       <DependentUpon>BikeStoreDB.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\ReportViewModel.cs" />
     <Compile Include="Models\staffs.cs">
       <DependentUpon>BikeStoreDB.tt</DependentUpon>
     </Compile>
@@ -264,6 +266,7 @@
     <Content Include="Views\products\Edit.cshtml" />
     <Content Include="Views\products\Index.cshtml" />
     <Content Include="Views\Maintain\Index.cshtml" />
+    <Content Include="Views\Report\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
