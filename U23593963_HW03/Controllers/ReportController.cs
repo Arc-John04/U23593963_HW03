@@ -13,6 +13,8 @@ namespace U23593963_HW03.Controllers
 {
     public class ReportController : Controller
     {
+        private BikeStoresEntities db = new BikeStoresEntities();
+
         // GET: Report
         public async Task<ActionResult> Index(string reportType = "CurrentSales")
         {
@@ -22,10 +24,7 @@ namespace U23593963_HW03.Controllers
                 {
                     new SelectListItem { Value = "CurrentSales", Text = "Current Sales Report" },
                     new SelectListItem { Value = "StockItems", Text = "Stock Items Report" },
-                    new SelectListItem { Value = "OrderHistory", Text = "Order History Report" },
                     new SelectListItem { Value = "PopularProducts", Text = "Popular Products Report" },
-                    new SelectListItem { Value = "SalesFrequency", Text = "Sales Frequency Report" },
-                    new SelectListItem { Value = "DurationAnalysis", Text = "Duration Analysis Report" },
                     new SelectListItem { Value = "CustomerRanking", Text = "Customer Performance Ranking" },
                     new SelectListItem { Value = "StaffRanking", Text = "Staff Performance Ranking" },
                     new SelectListItem { Value = "StoreRanking", Text = "Store Performance Ranking" }
@@ -34,10 +33,7 @@ namespace U23593963_HW03.Controllers
                 SavedReports = Session["SavedReports"] as List<SavedReport> ?? new List<SavedReport>()
             };
 
-            using (var db = new BikeStoresEntities())
-            {
-                await LoadReportData(model, db, reportType);
-            }
+            await LoadReportData(model, reportType);
 
             return View(model);
         }
@@ -46,12 +42,14 @@ namespace U23593963_HW03.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> GenerateReport(string reportType)
         {
-            return await Index(reportType);
+            var result = await Index(reportType);
+            return View("Index", ((ViewResult)result).Model);
         }
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> SaveReport(string fileName, string fileType, string description)
+        public ActionResult SaveReport(string fileName, string fileType, string description, string chartData)
         {
             try
             {
@@ -62,17 +60,14 @@ namespace U23593963_HW03.Controllers
                     return RedirectToAction("Index");
                 }
 
-                // Generate PDF report
-                var pdfBytes = await GeneratePdfReport();
-
                 var savedReport = new SavedReport
                 {
                     FileName = fileName + "." + (fileType ?? "pdf"),
                     FileType = fileType ?? "pdf",
-                    Description = description, // Bonus requirement
+                    Description = description,
                     CreatedDate = DateTime.Now,
-                    FileSize = $"{pdfBytes.Length / 1024} KB",
-                    FileContent = pdfBytes
+                    FileSize = "N/A",
+                    FileContent = System.Text.Encoding.UTF8.GetBytes(chartData ?? "")
                 };
 
                 var savedReports = Session["SavedReports"] as List<SavedReport> ?? new List<SavedReport>();
@@ -103,10 +98,14 @@ namespace U23593963_HW03.Controllers
                 {
                     savedReports.Remove(reportToRemove);
                     Session["SavedReports"] = savedReports;
+                    TempData["Message"] = $"Report '{fileName}' deleted successfully!";
+                    TempData["MessageType"] = "success";
                 }
-
-                TempData["Message"] = $"Report '{fileName}' deleted successfully!";
-                TempData["MessageType"] = "success";
+                else
+                {
+                    TempData["Message"] = $"Report '{fileName}' not found.";
+                    TempData["MessageType"] = "error";
+                }
             }
             catch (Exception ex)
             {
@@ -129,45 +128,46 @@ namespace U23593963_HW03.Controllers
                 return RedirectToAction("Index");
             }
 
-            return File(report.FileContent, "application/pdf", report.FileName);
+            // Return as downloadable file
+            return File(report.FileContent, "application/octet-stream", report.FileName);
         }
 
-        private async Task LoadReportData(ReportViewModel model, BikeStoresEntities db, string reportType)
+        private async Task LoadReportData(ReportViewModel model, string reportType)
         {
             switch (reportType)
             {
                 case "CurrentSales":
                     model.ReportTitle = "Current Sales Report";
-                    model.SalesByMonth = await GetCurrentSalesReport(db);
+                    model.SalesByMonth = await GetCurrentSalesReport();
                     break;
                 case "StockItems":
                     model.ReportTitle = "Stock Items Report";
-                    model.StockStatus = await GetStockItemsReport(db);
+                    model.StockStatus = await GetStockItemsReport();
                     break;
                 case "PopularProducts":
                     model.ReportTitle = "Popular Products Report";
-                    model.TopProducts = await GetPopularProductsReport(db);
+                    model.TopProducts = await GetPopularProductsReport();
                     break;
                 case "CustomerRanking":
                     model.ReportTitle = "Customer Performance Ranking";
-                    model.CustomerPerformance = await GetCustomerRankingReport(db);
+                    model.CustomerPerformance = await GetCustomerRankingReport();
                     break;
                 case "StaffRanking":
                     model.ReportTitle = "Staff Performance Ranking";
-                    model.StaffPerformance = await GetStaffRankingReport(db);
+                    model.StaffPerformance = await GetStaffRankingReport();
                     break;
                 case "StoreRanking":
                     model.ReportTitle = "Store Performance Ranking";
-                    model.StorePerformance = await GetStoreRankingReport(db);
+                    model.StorePerformance = await GetStoreRankingReport();
                     break;
                 default:
                     model.ReportTitle = "Sales Report";
-                    model.SalesByMonth = await GetCurrentSalesReport(db);
+                    model.SalesByMonth = await GetCurrentSalesReport();
                     break;
             }
         }
 
-        private async Task<List<DataPoint>> GetCurrentSalesReport(BikeStoresEntities db)
+        private async Task<List<DataPoint>> GetCurrentSalesReport()
         {
             var salesData = await db.orders
                 .Where(o => o.order_date.Year == DateTime.Now.Year)
@@ -180,14 +180,13 @@ namespace U23593963_HW03.Controllers
                 .OrderBy(x => x.Month)
                 .ToListAsync();
 
-                   return salesData.Select(s => new DataPoint(
-                     (double)s.TotalSales,
-                    new DateTime(DateTime.Now.Year, s.Month, 1).ToString("MMM yyyy")
-               )).ToList();
-
+            return salesData.Select(s => new DataPoint(
+                (double)s.TotalSales,
+                new DateTime(DateTime.Now.Year, s.Month, 1).ToString("MMM yyyy")
+            )).ToList();
         }
 
-        private async Task<List<DataPoint>> GetStockItemsReport(BikeStoresEntities db)
+        private async Task<List<DataPoint>> GetStockItemsReport()
         {
             var stockData = await db.stocks
                 .Include(s => s.products)
@@ -203,12 +202,12 @@ namespace U23593963_HW03.Controllers
                 .ToListAsync();
 
             return stockData.Select(s => new DataPoint(
-                (double)s.TotalStock, // Direct cast for non-nullable int
+                (double)(s.TotalStock ?? 0),
                 s.ProductName
             )).ToList();
         }
 
-        private async Task<List<DataPoint>> GetPopularProductsReport(BikeStoresEntities db)
+        private async Task<List<DataPoint>> GetPopularProductsReport()
         {
             var popularProducts = await db.order_items
                 .Include(oi => oi.products)
@@ -223,15 +222,16 @@ namespace U23593963_HW03.Controllers
                 .ToListAsync();
 
             return popularProducts.Select(p => new DataPoint(
-                (double)p.TotalSold, // Direct cast for non-nullable int
+                (double)p.TotalSold,
                 p.ProductName
             )).ToList();
         }
 
-        private async Task<List<DataPoint>> GetCustomerRankingReport(BikeStoresEntities db)
+        private async Task<List<DataPoint>> GetCustomerRankingReport()
         {
             var customerRanking = await db.orders
                 .Include(o => o.customers)
+                .Where(o => o.customers != null)
                 .GroupBy(o => new { o.customers.first_name, o.customers.last_name })
                 .Select(g => new
                 {
@@ -245,7 +245,7 @@ namespace U23593963_HW03.Controllers
             return customerRanking.Select(c => new DataPoint(c.TotalOrders, c.CustomerName)).ToList();
         }
 
-        private async Task<List<DataPoint>> GetStaffRankingReport(BikeStoresEntities db)
+        private async Task<List<DataPoint>> GetStaffRankingReport()
         {
             var staffRanking = await db.orders
                 .Include(o => o.staffs)
@@ -262,7 +262,7 @@ namespace U23593963_HW03.Controllers
             return staffRanking.Select(s => new DataPoint(s.TotalSales, s.StaffName)).ToList();
         }
 
-        private async Task<List<DataPoint>> GetStoreRankingReport(BikeStoresEntities db)
+        private async Task<List<DataPoint>> GetStoreRankingReport()
         {
             var storeRanking = await db.orders
                 .Include(o => o.stores)
@@ -279,11 +279,13 @@ namespace U23593963_HW03.Controllers
             return storeRanking.Select(s => new DataPoint(s.TotalOrders, s.StoreName)).ToList();
         }
 
-        private async Task<byte[]> GeneratePdfReport()
+        protected override void Dispose(bool disposing)
         {
-            // This would integrate with pdfmake or other PDF generation library
-            // For now, return a simple placeholder
-            return await Task.Run(() => new byte[] { 0x25, 0x50, 0x44, 0x46 }); // PDF header bytes
+            if (disposing)
+            {
+                db.Dispose();
+            }
+            base.Dispose(disposing);
         }
     }
 }

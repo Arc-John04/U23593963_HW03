@@ -4,11 +4,6 @@
     ViewBag.Title = "Reports";
 }
 
-<!-- Include required libraries - ONLY WITHIN SCOPE -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-
 <div class="container-fluid mt-4">
     <h2>@ViewBag.Title</h2>
 
@@ -16,27 +11,25 @@
     {
         <div class="alert alert-@(TempData["MessageType"] ?? "info") alert-dismissible fade show" role="alert">
             @TempData["Message"]
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
     <!-- Report Generation Section -->
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-            <h4><i class="glyphicon glyphicon-stats"></i> Generate Report</h4>
+            <h4><i class="fas fa-chart-bar"></i> Generate Report</h4>
         </div>
         <div class="card-body">
             @using (Html.BeginForm("GenerateReport", "Report", FormMethod.Post, new { @class = "form-inline" }))
             {
                 @Html.AntiForgeryToken()
-                <div class="form-group mr-3 mb-2">
-                    <label for="reportType" class="mr-2"><strong>Report Type:</strong></label>
+                <div class="form-group me-3 mb-2">
+                    <label for="reportType" class="me-2"><strong>Report Type:</strong></label>
                     @Html.DropDownList("reportType", Model.ReportTypes, new { @class = "form-control" })
                 </div>
                 <button type="submit" class="btn btn-success mb-2">
-                    <i class="glyphicon glyphicon-refresh"></i> Generate Report
+                    <i class="fas fa-sync-alt"></i> Generate Report
                 </button>
             }
         </div>
@@ -47,7 +40,7 @@
     {
         <div class="card mb-4">
             <div class="card-header bg-info text-white">
-                <h4><i class="glyphicon glyphicon-file"></i> @Model.ReportTitle</h4>
+                <h4><i class="fas fa-file-alt"></i> @Model.ReportTitle</h4>
             </div>
             <div class="card-body">
                 <!-- Chart Display -->
@@ -64,7 +57,7 @@
                     <div class="col-md-12">
                         <div class="card">
                             <div class="card-header bg-light">
-                                <h5><i class="glyphicon glyphicon-list-alt"></i> Report Summary</h5>
+                                <h5><i class="fas fa-list"></i> Report Summary</h5>
                             </div>
                             <div class="card-body">
                                 <div id="reportSummary" class="table-responsive">
@@ -78,43 +71,42 @@
                 <!-- Save Report Section -->
                 <div class="card bg-light">
                     <div class="card-body">
-                        <h5><i class="glyphicon glyphicon-floppy-disk"></i> Save Report</h5>
+                        <h5><i class="fas fa-save"></i> Save Report</h5>
                         @using (Html.BeginForm("SaveReport", "Report", FormMethod.Post, new { id = "saveReportForm" }))
                         {
                             @Html.AntiForgeryToken()
-                            <div class="form-row">
+                            <input type="hidden" id="chartDataInput" name="chartData" />
+
+                            <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label for="fileName" class="font-weight-bold">Filename:</label>
+                                    <label for="fileName" class="form-label fw-bold">Filename:</label>
                                     <input type="text" id="fileName" name="fileName" class="form-control"
                                            placeholder="Enter filename (e.g., monthly_sales_report)" required />
                                     <small class="form-text text-muted">Do not include file extension</small>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <label for="fileType" class="font-weight-bold">File Type:</label>
+                                    <label for="fileType" class="form-label fw-bold">File Type:</label>
                                     <select id="fileType" name="fileType" class="form-control">
                                         <option value="pdf">PDF Document</option>
                                         <option value="html">HTML Report</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2 mb-3">
-                                    <label class="font-weight-bold">Actions:</label>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label fw-bold">Actions:</label>
                                     <div>
-                                        <button type="button" id="previewReport" class="btn btn-outline-primary btn-sm">
-                                            <i class="glyphicon glyphicon-eye-open"></i> Preview
-                                        </button>
                                         <button type="button" id="downloadReport" class="btn btn-outline-success btn-sm">
-                                            <i class="glyphicon glyphicon-download"></i> Download
+                                            <i class="fas fa-download"></i> Download PDF
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- BONUS: Resizable Text Box for Description -->
-                            <div class="form-row mt-3">
+                            <div class="row mt-3">
                                 <div class="col-md-12">
-                                    <label for="description" class="font-weight-bold">
-                                        <i class="glyphicon glyphicon-pencil"></i> Report Description
-                                        <span class="badge badge-warning">BONUS Feature</span>
+                                    <label for="description" class="form-label fw-bold">
+                                        <i class="fas fa-pencil-alt"></i> Report Description
+                                        <span class="badge bg-warning text-dark">BONUS Feature</span>
                                     </label>
                                     <textarea id="description" name="description" class="form-control resizable-textarea"
                                               placeholder="Enter a detailed description of this report... (This resizable textarea meets the bonus requirement)"
@@ -125,13 +117,13 @@
                                 </div>
                             </div>
 
-                            <div class="form-row mt-4">
+                            <div class="row mt-4">
                                 <div class="col-md-12">
                                     <button type="submit" class="btn btn-primary btn-lg">
-                                        <i class="glyphicon glyphicon-save"></i> Save Report with Description
+                                        <i class="fas fa-save"></i> Save Report with Description
                                     </button>
                                     <button type="button" id="clearForm" class="btn btn-outline-secondary btn-lg">
-                                        <i class="glyphicon glyphicon-erase"></i> Clear Form
+                                        <i class="fas fa-eraser"></i> Clear Form
                                     </button>
                                 </div>
                             </div>
@@ -145,7 +137,7 @@
     <!-- Document Archive Section -->
     <div class="card">
         <div class="card-header bg-secondary text-white">
-            <h4><i class="glyphicon glyphicon-folder-open"></i> Document Archive</h4>
+            <h4><i class="fas fa-folder-open"></i> Document Archive</h4>
         </div>
         <div class="card-body">
             @if (Model.SavedReports != null && Model.SavedReports.Any())
@@ -157,7 +149,6 @@
                                 <th>Filename</th>
                                 <th>File Type</th>
                                 <th>Date Saved</th>
-                                <th>File Size</th>
                                 <th>Description</th>
                                 <th>Actions</th>
                             </tr>
@@ -166,12 +157,11 @@
                             @foreach (var report in Model.SavedReports)
                             {
                                 <tr>
-                                    <td class="font-weight-bold">@report.FileName</td>
+                                    <td class="fw-bold">@report.FileName</td>
                                     <td>
-                                        <span class="badge badge-info">@report.FileType.ToUpper()</span>
+                                        <span class="badge bg-info">@report.FileType.ToUpper()</span>
                                     </td>
                                     <td>@report.CreatedDate.ToString("yyyy-MM-dd HH:mm")</td>
-                                    <td><span class="badge badge-light">@report.FileSize</span></td>
                                     <td>
                                         @if (!string.IsNullOrEmpty(report.Description))
                                         {
@@ -197,14 +187,14 @@
                                             {
                                                 <input type="hidden" name="fileName" value="@report.FileName" />
                                                 <button type="submit" class="btn btn-success" title="Download Report">
-                                                    <i class="glyphicon glyphicon-download"></i>
+                                                    <i class="fas fa-download"></i>
                                                 </button>
                                             }
                                             <button type="button" class="btn btn-info view-description"
                                                     data-description="@report.Description"
                                                     data-filename="@report.FileName"
                                                     title="View Full Description">
-                                                <i class="glyphicon glyphicon-eye-open"></i>
+                                                <i class="fas fa-eye"></i>
                                             </button>
                                             @using (Html.BeginForm("DeleteReport", "Report", FormMethod.Post, new { style = "display:inline;" }))
                                             {
@@ -213,7 +203,7 @@
                                                 <button type="submit" class="btn btn-danger"
                                                         onclick="return confirm('Are you sure you want to delete the report \" @report.FileName \"?');"
                                                         title="Delete Report">
-                                                    <i class="glyphicon glyphicon-trash"></i>
+                                                    <i class="fas fa-trash"></i>
                                                 </button>
                                             }
                                         </div>
@@ -226,7 +216,7 @@
 
                 <div class="mt-3">
                     <span class="text-muted">
-                        <i class="glyphicon glyphicon-info-sign"></i>
+                        <i class="fas fa-info-circle"></i>
                         Showing @Model.SavedReports.Count saved report(s)
                     </span>
                 </div>
@@ -234,7 +224,7 @@
             else
             {
                 <div class="text-center py-4">
-                    <i class="glyphicon glyphicon-inbox" style="font-size: 48px; color: #6c757d;"></i>
+                    <i class="fas fa-inbox" style="font-size: 48px; color: #6c757d;"></i>
                     <h5 class="text-muted mt-3">No saved reports available</h5>
                     <p class="text-muted">Generate and save reports to see them here.</p>
                 </div>
@@ -244,14 +234,12 @@
 </div>
 
 <!-- Description Modal -->
-<div class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="descriptionModalLabel" aria-hidden="true">
+<div class="modal fade" id="descriptionModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="descriptionModalLabel">Report Description</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h5 class="modal-title">Report Description</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <p><strong>File:</strong> <span id="modalFileName"></span></p>
@@ -260,16 +248,23 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
+    <!-- Chart.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+    <!-- pdfmake -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
     <script>
         // Chart data from model
         var chartData = @Html.Raw(Json.Encode(Model));
+        var myChart = null;
 
         $(document).ready(function () {
             initializeChart();
@@ -277,7 +272,10 @@
         });
 
         function initializeChart() {
-            var ctx = document.getElementById('reportChart').getContext('2d');
+            var ctx = document.getElementById('reportChart');
+            if (!ctx) return;
+
+            ctx = ctx.getContext('2d');
             var data = getChartData();
 
             if (!data) {
@@ -287,7 +285,7 @@
                 return;
             }
 
-            var myChart = new Chart(ctx, {
+            myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: data.labels,
@@ -303,28 +301,26 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: {
-                            beginAtZero: true,
+                        yAxes: [{
                             ticks: {
+                                beginAtZero: true,
                                 callback: function(value) {
                                     return formatNumber(value);
                                 }
                             }
-                        }
+                        }]
                     },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    return context.dataset.label + ': ' + formatNumber(context.parsed.y);
-                                }
+                    tooltips: {
+                        callbacks: {
+                            label: function(tooltipItem, data) {
+                                return data.datasets[tooltipItem.datasetIndex].label + ': ' +
+                                       formatNumber(tooltipItem.yLabel);
                             }
                         }
                     }
                 }
             });
 
-            // Update report summary
             updateReportSummary(data);
         }
 
@@ -397,27 +393,27 @@
                         <tbody>
                             <tr>
                                 <td><strong>Total Items</strong></td>
-                                <td class="text-success font-weight-bold">${data.values.length}</td>
+                                <td class="text-success fw-bold">${data.values.length}</td>
                                 <td>Number of data points in report</td>
                             </tr>
                             <tr>
                                 <td><strong>Total Value</strong></td>
-                                <td class="text-primary font-weight-bold">${formatNumber(total)}</td>
+                                <td class="text-primary fw-bold">${formatNumber(total)}</td>
                                 <td>Sum of all values</td>
                             </tr>
                             <tr>
                                 <td><strong>Average</strong></td>
-                                <td class="text-info font-weight-bold">${formatNumber(average)}</td>
+                                <td class="text-info fw-bold">${formatNumber(average)}</td>
                                 <td>Average value per item</td>
                             </tr>
                             <tr>
                                 <td><strong>Highest</strong></td>
-                                <td class="text-success font-weight-bold">${formatNumber(maxValue)}</td>
+                                <td class="text-success fw-bold">${formatNumber(maxValue)}</td>
                                 <td>Maximum value in dataset</td>
                             </tr>
                             <tr>
                                 <td><strong>Lowest</strong></td>
-                                <td class="text-warning font-weight-bold">${formatNumber(minValue)}</td>
+                                <td class="text-warning fw-bold">${formatNumber(minValue)}</td>
                                 <td>Minimum value in dataset</td>
                             </tr>
                         </tbody>
@@ -438,25 +434,14 @@
                 $('#fileName').focus();
             });
 
-            // Preview report button
-            $('#previewReport').click(function() {
-                var fileName = $('#fileName').val();
-                if (!fileName) {
-                    alert('Please enter a filename first.');
-                    return;
-                }
-                alert('Preview functionality would open a preview window for: ' + fileName);
-                // In real implementation, this would open a preview modal or window
-            });
-
-            // Download report button
+            // Download report button - generates and downloads PDF
             $('#downloadReport').click(function() {
                 var fileName = $('#fileName').val();
                 if (!fileName) {
                     alert('Please enter a filename first.');
+                    $('#fileName').focus();
                     return;
                 }
-                // This would trigger the PDF generation and download
                 generateAndDownloadPDF();
             });
 
@@ -472,10 +457,11 @@
                     $('#modalDescription').html('<em class="text-muted">No description provided for this report.</em>');
                 }
 
-                $('#descriptionModal').modal('show');
+                var modal = new bootstrap.Modal(document.getElementById('descriptionModal'));
+                modal.show();
             });
 
-            // Form submission enhancement
+            // Form submission - store chart data before submitting
             $('#saveReportForm').submit(function(e) {
                 var fileName = $('#fileName').val();
                 if (!fileName) {
@@ -485,22 +471,36 @@
                     return false;
                 }
 
-                // Add loading state
-                var submitBtn = $(this).find('button[type="submit"]');
-                var originalText = submitBtn.html();
-                submitBtn.html('<i class="glyphicon glyphicon-hourglass"></i> Saving...').prop('disabled', true);
-
-                // Re-enable after 3 seconds if still processing
-                setTimeout(function() {
-                    submitBtn.html(originalText).prop('disabled', false);
-                }, 3000);
+                // Store chart data as JSON
+                var data = getChartData();
+                if (data) {
+                    $('#chartDataInput').val(JSON.stringify({
+                        title: chartData.ReportTitle,
+                        labels: data.labels,
+                        values: data.values
+                    }));
+                }
             });
         }
 
         function generateAndDownloadPDF() {
-            // This would integrate with pdfmake to generate and download the PDF
             var fileName = $('#fileName').val() || 'report';
             var description = $('#description').val();
+            var data = getChartData();
+
+            if (!data) {
+                alert('No chart data available to generate PDF.');
+                return;
+            }
+
+            // Create table body from chart data
+            var tableBody = [];
+            for (var i = 0; i < data.labels.length; i++) {
+                tableBody.push([
+                    data.labels[i],
+                    formatNumber(data.values[i])
+                ]);
+            }
 
             var docDefinition = {
                 content: [
@@ -517,8 +517,19 @@
                     },
                     { text: '\n' },
                     {
-                        text: 'This is a placeholder for the actual report content.',
-                        style: 'content'
+                        text: 'Report Data:',
+                        style: 'tableHeader'
+                    },
+                    {
+                        table: {
+                            headerRows: 1,
+                            widths: ['*', 'auto'],
+                            body: [
+                                ['Label', 'Value'],
+                                ...tableBody
+                            ]
+                        },
+                        style: 'dataTable'
                     }
                 ],
                 styles: {
@@ -543,9 +554,13 @@
                         margin: [0, 0, 0, 10],
                         italics: true
                     },
-                    content: {
-                        fontSize: 12,
-                        margin: [0, 20, 0, 0]
+                    tableHeader: {
+                        fontSize: 14,
+                        bold: true,
+                        margin: [0, 10, 0, 5]
+                    },
+                    dataTable: {
+                        margin: [0, 5, 0, 15]
                     }
                 }
             };
@@ -565,8 +580,8 @@
         }
 
             .resizable-textarea:focus {
-                border-color: #007bff;
-                box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+                border-color: #0d6efd;
+                box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
             }
 
         .report-description {
@@ -603,8 +618,8 @@
             font-size: 1.25rem;
         }
 
-        .badge-warning {
-            background-color: #ffc107;
+        .badge.bg-warning {
+            background-color: #ffc107 !important;
             color: #212529;
         }
     </style>
