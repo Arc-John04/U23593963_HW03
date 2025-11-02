@@ -4,6 +4,26 @@
 }
 
 <style>
+    :root {
+        --primary-color: #3498db;
+        --secondary-color: #2c3e50;
+        --accent-color: #e74c3c;
+        --light-bg: #ecf0f1;
+        --card-bg: #ffffff;
+        --text-dark: #2c3e50;
+        --text-light: #7f8c8d;
+        --border-color: #bdc3c7;
+        --success-color: #27ae60;
+        --warning-color: #f39c12;
+        --danger-color: #e74c3c;
+    }
+
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding-bottom: 20px;
+    }
+
     .maintain-container {
         display: flex;
         gap: 20px;
@@ -11,45 +31,68 @@
     }
 
     .maintain-box {
-        border: 2px solid #ccc;
-        padding: 15px;
+        border: 2px solid var(--border-color);
+        padding: 20px;
         flex: 1;
-        background: #f9f9f9;
-        border-radius: 5px;
+        background: var(--card-bg);
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
+
+        .maintain-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
 
         .maintain-box h4 {
             margin-top: 0;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 2px solid #333;
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--secondary-color);
+            font-weight: 600;
         }
 
     .form-row {
         display: flex;
         gap: 10px;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
         align-items: center;
     }
 
         .form-row label {
             flex: 0 0 120px;
-            font-weight: bold;
+            font-weight: 600;
             margin: 0;
+            color: var(--text-dark);
         }
 
         .form-row input,
         .form-row select {
             flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 6px 10px;
+            font-size: 14px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
+            .form-row input:focus,
+            .form-row select:focus {
+                outline: none;
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            }
+
     .list-area {
-        border: 1px solid #999;
-        background: #fff;
+        border: 1px solid var(--border-color);
+        background: var(--light-bg);
         padding: 10px;
         height: 150px;
         overflow-y: auto;
         margin-top: 10px;
+        border-radius: 5px;
     }
 
         .list-area ul {
@@ -60,27 +103,52 @@
 
         .list-area li {
             cursor: pointer;
-            padding: 8px 5px;
-            border-bottom: 1px solid #eee;
+            padding: 10px 8px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+            color: var(--text-dark);
         }
 
             .list-area li:hover {
-                background: #f0f0f0;
+                background: rgba(52, 152, 219, 0.1);
             }
 
             .list-area li.selected {
-                background: #e3f2fd;
+                background: rgba(52, 152, 219, 0.2);
+                border-left: 3px solid var(--primary-color);
             }
 
     .action-buttons {
-        margin-top: 15px;
+        margin-top: 20px;
         display: flex;
         gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        border-radius: 5px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-success {
+        background: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    .btn-danger {
+        background: var(--danger-color);
+        border-color: var(--danger-color);
     }
 
     .product-section {
         display: flex;
-        gap: 15px;
+        gap: 20px;
     }
 
     .product-details {
@@ -90,12 +158,13 @@
     .product-image {
         width: 150px;
         height: 150px;
-        border: 1px solid #999;
-        background: #fff;
+        border: 1px solid var(--border-color);
+        background: var(--light-bg);
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        border-radius: 8px;
     }
 
         .product-image img {
@@ -105,27 +174,51 @@
         }
 
     .placeholder-text {
-        color: #999;
+        color: var(--text-light);
         font-style: italic;
     }
 
     .alert {
-        padding: 10px;
-        margin-bottom: 15px;
+        padding: 12px 15px;
+        margin-bottom: 20px;
         border: 1px solid transparent;
-        border-radius: 4px;
+        border-radius: 8px;
+        font-weight: 500;
     }
 
     .alert-success {
-        color: #155724;
-        background-color: #d4edda;
-        border-color: #c3e6cb;
+        color: var(--success-color);
+        background-color: rgba(39, 174, 96, 0.1);
+        border-color: rgba(39, 174, 96, 0.3);
     }
 
     .alert-danger {
-        color: #721c24;
-        background-color: #f8d7da;
-        border-color: #f5c6cb;
+        color: var(--danger-color);
+        background-color: rgba(231, 76, 60, 0.1);
+        border-color: rgba(231, 76, 60, 0.3);
+    }
+
+    h2 {
+        color: white;
+        text-align: center;
+        margin-bottom: 10px;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Modal enhancements */
+    .modal-header {
+        background: var(--primary-color);
+        color: white;
+        border-bottom: none;
+    }
+
+    .modal-title {
+        font-weight: 600;
+    }
+
+    .btn-close {
+        filter: invert(1);
     }
 </style>
 
@@ -149,7 +242,7 @@
 
     <!-- STAFF SECTION -->
     <div class="maintain-box">
-        <h4>Staff List</h4>
+        <h4> Staff List</h4>
 
         <div class="form-row">
             <label>First Name:</label>
@@ -195,7 +288,7 @@
 
     <!-- CUSTOMERS SECTION -->
     <div class="maintain-box">
-        <h4>Customer List</h4>
+        <h4> Customer List</h4>
 
         <div class="form-row">
             <label>First Name:</label>
@@ -241,7 +334,7 @@
 
     <!-- PRODUCTS SECTION -->
     <div class="maintain-box">
-        <h4>Product List</h4>
+        <h4> Product List</h4>
 
         <div class="product-section">
             <div class="product-details">
