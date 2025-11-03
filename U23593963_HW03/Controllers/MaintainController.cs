@@ -181,9 +181,26 @@ namespace U23593963_HW03.Controllers
         {
             try
             {
-                var staff = await db.staffs.FindAsync(staff_id);
+                var staff = await db.staffs
+                    .Include(s => s.orders) // Check for orders created by this staff
+                    .Include(s => s.staffs1) // Check if this staff manages others
+                    .FirstOrDefaultAsync(s => s.staff_id == staff_id);
+
                 if (staff != null)
                 {
+                    // Check constraints
+                    if (staff.orders.Any())
+                    {
+                        TempData["ErrorMessage"] = "Cannot delete staff member who has created orders. The staff member has " + staff.orders.Count + " order(s).";
+                        return RedirectToAction("Index");
+                    }
+
+                    if (staff.staffs1.Any())
+                    {
+                        TempData["ErrorMessage"] = "Cannot delete staff member who manages other staff members. Please reassign their reports first.";
+                        return RedirectToAction("Index");
+                    }
+
                     db.staffs.Remove(staff);
                     await db.SaveChangesAsync();
                     TempData["SuccessMessage"] = "Staff deleted successfully!";
@@ -195,7 +212,15 @@ namespace U23593963_HW03.Controllers
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Error deleting staff: " + ex.Message;
+                // Check for specific constraint violations
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE constraint"))
+                {
+                    TempData["ErrorMessage"] = "Cannot delete staff member due to database constraints. This staff member may have related records in orders or manages other staff.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Error deleting staff: " + ex.Message;
+                }
             }
 
             return RedirectToAction("Index");
@@ -208,9 +233,19 @@ namespace U23593963_HW03.Controllers
         {
             try
             {
-                var customer = await db.customers.FindAsync(customer_id);
+                var customer = await db.customers
+                    .Include(c => c.orders) // Check for customer orders
+                    .FirstOrDefaultAsync(c => c.customer_id == customer_id);
+
                 if (customer != null)
                 {
+                    // Check constraints
+                    if (customer.orders.Any())
+                    {
+                        TempData["ErrorMessage"] = "Cannot delete customer who has order history. The customer has " + customer.orders.Count + " order(s).";
+                        return RedirectToAction("Index");
+                    }
+
                     db.customers.Remove(customer);
                     await db.SaveChangesAsync();
                     TempData["SuccessMessage"] = "Customer deleted successfully!";
@@ -222,7 +257,15 @@ namespace U23593963_HW03.Controllers
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Error deleting customer: " + ex.Message;
+                // Check for specific constraint violations
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE constraint"))
+                {
+                    TempData["ErrorMessage"] = "Cannot delete customer due to database constraints. This customer may have order history.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Error deleting customer: " + ex.Message;
+                }
             }
 
             return RedirectToAction("Index");
@@ -235,9 +278,26 @@ namespace U23593963_HW03.Controllers
         {
             try
             {
-                var product = await db.products.FindAsync(product_id);
+                var product = await db.products
+                    .Include(p => p.order_items) // Check for order items
+                    .Include(p => p.stocks) // Check for stock records
+                    .FirstOrDefaultAsync(p => p.product_id == product_id);
+
                 if (product != null)
                 {
+                    // Check constraints
+                    if (product.order_items.Any())
+                    {
+                        TempData["ErrorMessage"] = "Cannot delete product that has been ordered. The product appears in " + product.order_items.Count + " order item(s).";
+                        return RedirectToAction("Index");
+                    }
+
+                    if (product.stocks.Any())
+                    {
+                        // Remove stock records first
+                        db.stocks.RemoveRange(product.stocks);
+                    }
+
                     db.products.Remove(product);
                     await db.SaveChangesAsync();
                     TempData["SuccessMessage"] = "Product deleted successfully!";
@@ -249,7 +309,15 @@ namespace U23593963_HW03.Controllers
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Error deleting product: " + ex.Message;
+                // Check for specific constraint violations
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE constraint"))
+                {
+                    TempData["ErrorMessage"] = "Cannot delete product due to database constraints. This product may have order history or stock records.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Error deleting product: " + ex.Message;
+                }
             }
 
             return RedirectToAction("Index");

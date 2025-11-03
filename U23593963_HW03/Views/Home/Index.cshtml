@@ -928,51 +928,55 @@
                         $('#product_year').text(product.model_year);
                         $('#product_price').text('$' + product.list_price.toFixed(2));
 
-                        loadProductImage(product.product_id, product.brand_name);
+                        loadProductImage(product.product_id, product.brand_name, product.product_name);
                     }
                 });
+            
             }
 
-            // Load product image
-            function loadProductImage(productId, brandName) {
-                var extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-                var imagePaths = [];
+           
+            // Load product image using product ID
+            function loadProductImage(productId, brandName, productName) {
+                var $container = $('#productImageContainer');
+                var imagePath = '/Content/Images/' + productId + '.jpeg';
 
-                // Try product ID based images first
-                extensions.forEach(function(ext) {
-                    imagePaths.push('~/Content/Images/' + productId + ext);
-                });
+                var img = new Image();
+                img.onload = function () {
+                    $container.html('<img src="' + imagePath + '" alt="' + productName + '" style="max-width: 100%; max-height: 100%; object-fit: contain;" />');
+                };
+                img.onerror = function () {
+                    // If specific product image not found, try generic brand image as fallback
+                    tryBrandImage(brandName, productName);
+                };
+                img.src = imagePath;
+            }
 
-                // Try product name variations
-                var product = filteredProductData.find(p => p.product_id === productId);
-                if (product && product.product_name) {
-                    var productNameClean = product.product_name.replace(/[^a-zA-Z0-9]/g, '_');
-                    extensions.forEach(function(ext) {
-                        imagePaths.push('~/Content/Images/' + productNameClean + ext);
-                    });
-                    var productNameNoSpaces = product.product_name.replace(/\s+/g, '');
-                    extensions.forEach(function(ext) {
-                        imagePaths.push('~/Content/Images/' + productNameNoSpaces + ext);
-                    });
-                }
+            // Fallback to brand image if product-specific image not found
+            function tryBrandImage(brandName, productName) {
+                var brandImageMap = {
+                    'Electra': 'electra',
+                    'Haro': 'haro',
+                    'Heller': 'heller',
+                    'Pure Cycles': 'pure',
+                    'Ritchey': 'ritchey',
+                    'Strider': 'strider',
+                    'Sun Bicycles': 'sun',
+                    'Surly': 'surly',
+                    'Trek': 'trek'
+                };
 
-                // Try brand name based images
-                if (brandName) {
-                    extensions.forEach(function(ext) {
-                        imagePaths.push('~/Content/Images/' + brandName.replace(/\s+/g, '_') + ext);
-                        imagePaths.push('~/Content/Images/' + brandName.replace(/\s+/g, '') + ext);
-                        imagePaths.push('~/Content/Images/' + brandName.toLowerCase().replace(/\s+/g, '_') + ext);
-                    });
-                }
+                var brandKey = brandName in brandImageMap ? brandImageMap[brandName] : 'bicycle';
+                var brandImagePath = '/Content/Images/' + brandKey + '.jpeg';
 
-                // Try generic bicycle image
-                extensions.forEach(function(ext) {
-                    imagePaths.push('~/Content/Images/bicycle' + ext);
-                    imagePaths.push('~/Content/Images/bike' + ext);
-                    imagePaths.push('~/Content/Images/default' + ext);
-                });
-
-                tryLoadImage(imagePaths, 0);
+                var img = new Image();
+                img.onload = function () {
+                    $('#productImageContainer').html('<img src="' + brandImagePath + '" alt="' + productName + '" style="max-width: 100%; max-height: 100%; object-fit: contain;" />');
+                };
+                img.onerror = function () {
+                    // Final fallback
+                    $('#productImageContainer').html('<span class="placeholder-text">No image available</span>');
+                };
+                img.src = brandImagePath;
             }
 
             // Recursively try to load images
